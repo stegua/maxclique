@@ -32,7 +32,6 @@ int main(int argc, char* argv[]) {
    int64_t a = __rdtsc();
    bitset64_t clique = G.find_maxclique();
    int64_t b = __rdtsc();
-   //int a = 0, b = 0;
    fprintf(stdout, "w(G) = %lld   -   Time stamp counter: %lld %lld\n", count_bits(clique), b - a, G.get_n());
 
 
@@ -41,7 +40,6 @@ int main(int argc, char* argv[]) {
    a = __rdtsc();
    auto clique2 = H.find_maxclique();
    b = __rdtsc();
-   //int a = 0, b = 0;
    fprintf(stdout, "w(G) = %lld   -   Time stamp counter: %lld %lld\n", count_bits(clique2), b - a, G.get_n());
 }
 

@@ -26,16 +26,16 @@ inline uint64_t count_bits(bitset64_t bs) {
 #ifdef _WIN64
    return __popcnt64(bs);
 #else
-   return __builtin_popcountll(bs);
+   return _mm_countbits_64(bs);
 #endif
 }
 // Return next bit set to true
 uint64_t next_1_bit(bitset64_t bs) {
-#ifdef _WIN64
+//#ifdef _WIN64
    return _tzcnt_u64(bs);
-#else
-   return __builtin_popcountll(bs);
-#endif
+//#else
+   //return __builtin_popcountll(bs);
+//#endif
 }
 
 class BitGraph64 {
