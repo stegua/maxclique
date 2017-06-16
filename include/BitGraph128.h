@@ -9,21 +9,35 @@ typedef std::array<uint64_t, 2>  bitset128_t;
 
 // Set to true i-th bit of bitset sets bs
 inline void set_bit(bitset128_t& bs, uint64_t i) {
-   if (i < 64)
-      bs[0] |= (uint64_t)1 << i; // _mm_slli_si128 (r := a << (imm * 8)) // _mm_sll_epi64 ??
-   else
-      bs[1] |= (uint64_t)1 << (i - 64);
-   // branchless
-//  bool b = (i > 64);
-   // bs[b] |= (uint64_t)1 << (i - 64 * b);
+	if(true) {
+		if (i < 64)
+			bs[0] |= (uint64_t)1 << i; // _mm_slli_si128 (r := a << (imm * 8)) // _mm_sll_epi64 ??
+		else
+			bs[1] |= (uint64_t)1 << (i - 64);
+		// branchless
+		//  bool b = (i > 64);
+		// bs[b] |= (uint64_t)1 << (i - 64 * b);
+		//
+	} else {
+		// branchless
+		int idx = i / 64;
+		int v = i % 64;
+		bs[idx] |= (uint64_t)1 << v;
+	}
 }
 
 // Reset to true i-th bit of bitsetsets bs
 inline void reset_bit(bitset128_t& bs, uint64_t i) {
-   if (i < 64)
-      bs[0] &= ~(uint64_t)1 << i; // _mm_slli_si128 (r := a << (imm * 8)) // _mm_sll_epi64 ??
-   else
-      bs[1] &= ~(uint64_t)1 << (i - 64);
+	if(true) {
+		if (i < 64)
+			bs[0] &= ~(uint64_t)1 << i; // _mm_slli_si128 (r := a << (imm * 8)) // _mm_sll_epi64 ??
+		else
+			bs[1] &= ~(uint64_t)1 << (i - 64);
+	} else {
+		int idx = i / 64;
+		int v = i % 64;
+		bs[idx] &= ~(uint64_t)1 << v;
+	}
 }
 
 // Set to true all bits of bitset bs
