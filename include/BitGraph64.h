@@ -1,8 +1,13 @@
 #pragma once
 
-#include <smmintrin.h>
-#include "immintrin.h"
+#include <cstdint>
 #include <array>
+
+#include "immintrin.h"
+
+#ifdef _LAPTOP
+#include "smmintrin.h"
+#endif
 
 // Basic support for bitsets
 typedef uint64_t  bitset64_t;
@@ -27,17 +32,14 @@ inline uint64_t count_bits(bitset64_t bs) {
 #ifdef _WIN64
    return __popcnt64(bs);
 #else
-#ifdef _LAPTOP
-   return __builtin_popcountll(bs);
-#else
-   return _popcnt64(bs);
-#endif
+   return _mm_popcnt_u64(bs); 
 #endif
 }
+
 // Return next bit set to true
 uint64_t next_1_bit(bitset64_t bs) {
 #ifdef _LAPTOP
-   return __builtin_ctz(bs);
+   return __builtin_ctzll(bs);
 #else
    return _tzcnt_u64(bs);
 #endif
