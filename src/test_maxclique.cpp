@@ -2,6 +2,7 @@
 #include "BitGraph128.h"
 
 #include "immintrin.h"
+#include "x86intrin.h"
 
 // Read a dimacs instance
 #include <fstream>
@@ -24,8 +25,10 @@ void read_graph(const std::string& filename, BitGraph& G) {
 }
 
 int main(int argc, char* argv[]) {
-   if (argc != 2)
+   if (argc != 2) {
       fprintf(stdout, "Usage:  ./MaxClique <filename>\n\n");
+      exit(0);
+   }
 
    BitGraph64 G;
    read_graph(argv[1], G);
@@ -35,11 +38,11 @@ int main(int argc, char* argv[]) {
    fprintf(stdout, "w(G) = %lld   -   Time stamp counter: %lld %lld\n", count_bits(clique), b - a, G.get_n());
 
 
-   BitGraph128 H;
-   read_graph(argv[1], H);
-   a = __rdtsc();
-   auto clique2 = H.find_maxclique();
-   b = __rdtsc();
-   fprintf(stdout, "w(G) = %lld   -   Time stamp counter: %lld %lld\n", count_bits(clique2), b - a, G.get_n());
+   //BitGraph128 H;
+   //read_graph(argv[1], H);
+   //a = __rdtsc();
+   //auto clique2 = H.find_maxclique();
+   //b = __rdtsc();
+   //fprintf(stdout, "w(G) = %lld   -   Time stamp counter: %lld %lld\n", count_bits(clique2), b - a, G.get_n());
 }
 

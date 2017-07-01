@@ -58,25 +58,29 @@ inline uint64_t count_bits(const bitset128_t& bs) {
 #ifdef _WIN64
    return __popcnt64(bs[0]) + __popcnt64(bs[1]);
 #else
+#ifdef _LAPTOP
+   return __builtin_popcountll(bs[0]) + __builtin_popcountll(bs[1]);
+#else
    return _mm_countbits_64(bs[0]) + _mm_countbits_64(bs[1]);
+#endif
 #endif
 }
 
 // Return next bit set to true
 uint64_t next_1_bit(const bitset128_t& bs) {
-//#ifdef _WIN64
+#ifdef _LAPTOP
+   uint64_t v = __builtin_ctz(bs[0]);
+   if (v < 64)
+      return v;
+   v = 64 + __builtin_ctz(bs[1]);
+   return v;
+#else
    uint64_t v = _tzcnt_u64(bs[0]);
    if (v < 64)
       return v;
    v = 64 + _tzcnt_u64(bs[1]);
    return v;
-//#else
-   //uint64_t v = __builtin_popcountll(bs[0]);
-   //if (v < 64)
-      //return v;
-   //v = 64 + __builtin_popcountll(bs[1]);
-   //return v;
-//#endif
+#endif
 }
 
 // Intersect two bitsets
