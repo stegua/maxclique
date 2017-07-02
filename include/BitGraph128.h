@@ -1,6 +1,7 @@
 #pragma once
 
 #include "immintrin.h"
+#include "emmintrin.h"
 #include <array>
 
 // Basic support for bitsets
@@ -9,83 +10,75 @@ typedef std::array<uint64_t, 2>  bitset128_t;
 
 // Set to true i-th bit of bitset sets bs
 inline void set_bit(bitset128_t& bs, uint64_t i) {
-	if(true) {
-		if (i < 64)
-			bs[0] |= (uint64_t)1 << i; // _mm_slli_si128 (r := a << (imm * 8)) // _mm_sll_epi64 ??
-		else
-			bs[1] |= (uint64_t)1 << (i - 64);
-		// branchless
-		//  bool b = (i > 64);
-		// bs[b] |= (uint64_t)1 << (i - 64 * b);
-		//
-	} else {
-		// branchless
-		int idx = i / 64;
-		int v = i % 64;
-		bs[idx] |= (uint64_t)1 << v;
-	}
+   if (true) {
+      if (i < 64)
+         //_bittestandset64((long long *)&bs[0], i);
+         bs[0] |= (uint64_t)1 << i;
+      else
+         //_bittestandset64((long long *)&bs[1], i - 64);
+         bs[1] |= (uint64_t)1 << (i - 64);
+   } else {
+      // branchless
+      int idx = i / 64;
+      int v = i % 64;
+      bs[idx] |= (uint64_t)1 << v;
+   }
 }
 
 // Reset to true i-th bit of bitsetsets bs
 inline void reset_bit(bitset128_t& bs, uint64_t i) {
-	if(true) {
-		if (i < 64)
-			bs[0] &= ~(uint64_t)1 << i; // _mm_slli_si128 (r := a << (imm * 8)) // _mm_sll_epi64 ??
-		else
-			bs[1] &= ~(uint64_t)1 << (i - 64);
-	} else {
-		int idx = i / 64;
-		int v = i % 64;
-		bs[idx] &= ~(uint64_t)1 << v;
-	}
+   if (true) {
+      if (i < 64)
+         //_bittestandreset64((long long *)&bs[0], i);
+         bs[0] &= ~(uint64_t)1 << i;
+      else
+         //_bittestandreset64((long long *)&bs[1], i - 64);
+         bs[1] &= ~(uint64_t)1 << (i - 64);
+   } else {
+      int idx = i / 64;
+      int v = i % 64;
+      bs[idx] &= ~(uint64_t)1 << v;
+   }
 }
 
 // Set to true all bits of bitset bs
 inline void set_bits(bitset128_t& bs) {
-   bs[0] = (uint64_t)~0; // Complement of 000....00
-   bs[1] = (uint64_t)~0;
+   bs = (bitset128_t&)(_mm_set1_epi64x((uint64_t)~0));
+   //bs[0] = (uint64_t)~0; // Complement of 000....00
+   //bs[1] = (uint64_t)~0;
 }
 
 // Set to false all bits of bitset bs
 inline void reset_bits(bitset128_t& bs) {
-   //bs = _mm_setzero_ps();
-   bs[0] = (uint64_t)0; // Complement of 000....00
-   bs[1] = (uint64_t)0;
+   bs = (bitset128_t&)_mm_setzero_ps();
+   //bs[0] = (uint64_t)0; // Complement of 000....00
+   //bs[1] = (uint64_t)0;
 }
 
 // Set to false all bits of bitsetsets bs
 inline uint64_t count_bits(const bitset128_t& bs) {
 #ifdef _WIN64
-   return __popcnt64(bs[0]) + __popcnt64(bs[1]);
+   return _mm_popcnt_u64(bs[0]) + _mm_popcnt_u64(bs[1]);
 #else
-#ifdef _LAPTOP
    return __builtin_popcountll(bs[0]) + __builtin_popcountll(bs[1]);
-#else
-   return _mm_countbits_64(bs[0]) + _mm_countbits_64(bs[1]);
-#endif
 #endif
 }
 
 // Return next bit set to true
-uint64_t next_1_bit(const bitset128_t& bs) {
-#ifdef _LAPTOP
-   uint64_t v = __builtin_ctz(bs[0]);
-   if (v < 64)
+uint64_t next_1_bit(bitset128_t& bs) {
+   uint64_t v = _tzcnt_u64(bs[0]); // First bit set to one
+   if (v < 64) {
+      bs[0] = _blsr_u64(bs[0]);  // Reset the found bit
       return v;
-   v = 64 + __builtin_ctz(bs[1]);
+   }
+   v = 64 + _tzcnt_u64(bs[1]);  // First bit set to one
+   bs[1] = _blsr_u64(bs[1]);    // Reset first bit set to one found bit
    return v;
-#else
-   uint64_t v = _tzcnt_u64(bs[0]);
-   if (v < 64)
-      return v;
-   v = 64 + _tzcnt_u64(bs[1]);
-   return v;
-#endif
 }
 
 // Intersect two bitsets
 inline void inplace_intersect(bitset128_t& a, const bitset128_t& b) {
-   //a = _mm_and_ps(a, b);
+   //a = (bitset128_t&)(_mm_and_ps((__m128&)a, (__m128&)b));
    a[0] &= b[0];
    a[1] &= b[1];
 }
@@ -130,10 +123,13 @@ class BitGraph128 {
       // Loop to avoid recursive calls
       while (true) {
          n_ps = (count_bits(Ps));
+         // QUANDO N_PS + N_CS < 64 PASSO A BIT64 PER TROVARE LA CLIQUE NEL SOTTOGRAFO...
+         // COME TORNO INDIETRO?
          if (n_ps + n_cs > n_bs) {
+            //fprintf(stdout, "%lu %lu %lu\n", n_ps, n_cs, n_bs);
             // Set first bit different from zero to branch over
             v = next_1_bit(Ps);
-            reset_bit(Ps, v);
+            //reset_bit(Ps, v);
             // Push right branch for 'v' not in clique into the stack
             SizeCs[idx] = n_cs;
             StackCs[idx] = Cs;
